@@ -1,0 +1,109 @@
+#!/bin/bash
+
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <format> <image or video filepath>"
+  echo "Available formatters"
+  echo "  {catgory}  Pictures, Videos"
+  echo "  {year}     2017"
+  echo "  {month}    02"
+  echo "  {day}      01"
+  echo "  {basename} IMG_1234"
+  echo "  {ext}      JPG"
+  echo ""
+  echo "So an example file name would be {category}/{year}/{year}-{month}-{day}_{basename}.{ext}"
+  exit 1
+fi
+
+
+### variables to start out with
+FORMAT="$1"
+FILE="$2"
+VALIDATION="$3"
+
+if [ "$VALIDATION" != "no" ]; then
+  VALIDATION="yes"
+fi
+
+FILENAME="$(basename "$FILE")"
+#CREATEDATE="$(exiftool "$FILE" | grep 'Create Date' | head -n 1 | tr ':' ' ')"
+CREATEDATE="$(exiftool -CreateDate "$FILE" | tr -s " " | tr ':' ' ')"
+
+if [[ "$CREATEDATE" == "" ]]; then
+  CREATEDATE="$(exiftool "$FILE" | grep 'File Modification Date/Time' | head -n 1 | tr -s ' ' | tr ':' ' ')"
+  CREATEDATE="${CREATEDATE#File}"
+fi
+
+### substitution variables
+ext="${FILENAME##*.}"
+ext="${ext,,}" # lowercase
+basename="${FILENAME%.*}"
+year=$(echo $CREATEDATE | awk '{print $3}')
+month=$(echo $CREATEDATE | awk '{print $4}')
+day=$(echo $CREATEDATE | awk '{print $5}')
+category="Unknown"
+
+if [[ $ext == "jpg" ]]; then
+  category="Pictures"
+fi
+
+if [[ $ext == "mov" ]]; then
+  category="Videos"
+fi
+
+if [[ $ext == "3gp" ]]; then
+  category="Videos"
+fi
+
+if [[ $ext == "mp4" ]]; then
+  category="Videos"
+fi
+
+if [[ $ext == "jpg" ]]; then
+  category="Pictures"
+fi
+
+if [[ $ext == "jpeg" ]]; then
+  category="Pictures"
+fi
+
+if [[ $ext == "png" ]]; then
+  category="Pictures"
+fi
+
+if [[ $ext == "mpg" ]]; then
+  category="Videos"
+fi
+
+### do validation now
+## make sure year, month and day are numbers
+## make sure Category is either Pictures or Videos
+
+if [ $VALIDATION == "yes" ]; then
+  re='^[0-9]+$'
+  if ! [[ $year =~ $re ]] ; then
+     exit 10;
+  fi
+
+  if ! [[ $month =~ $re ]] ; then
+     exit 11;
+  fi
+
+  if ! [[ $day =~ $re ]] ; then
+     exit 12;
+  fi
+
+  if [ $category == "Unknown" ]; then
+     exit 20;
+  fi
+fi
+
+### do string substitution now
+FORMAT="${FORMAT//\{ext\}/$ext}"
+FORMAT="${FORMAT//\{basename\}/$basename}"
+FORMAT="${FORMAT//\{year\}/$year}"
+FORMAT="${FORMAT//\{month\}/$month}"
+FORMAT="${FORMAT//\{day\}/$day}"
+FORMAT="${FORMAT//\{category\}/$category}"
+
+echo $FORMAT

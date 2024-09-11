@@ -1,0 +1,43 @@
+#!/bin/bash
+
+dry=1
+format="{year}-{month}-{day}_{basename}.{ext}"
+
+if [ "$1" == "run" ]; then
+   dry=0
+fi
+
+if [ "$dry" == "1" ]; then
+  echo defaut for command runs in dry mode, to make actual changes use argument: 
+  echo "    rename run"
+  echo
+fi
+
+if [ -d /tmp/new ]; then
+  echo "the new directory already exists, so I'm going to bail out now..."
+  exit
+fi
+
+if [ "$dry" == "0" ]; then
+   mkdir /tmp/new
+fi
+
+for file in /tmp/*; do
+    if [ -f "$file" ]; then
+       renamed="$(format "$format" "$file")"
+
+       basefile="${file#"/tmp/"}"
+
+       if [ "$?" != "0" ]; then
+	  echo "SKIP:   $basefile"
+       elif [ "$renamed" == "" ]; then
+	  echo "SKIP:   $basefile"
+       elif [ "$dry" == "0" ]; then
+	  mv "$file" "/tmp/new/$renamed"
+	  echo "MOVED:  $basefile -> new/$renamed"
+       else
+	  echo "DRYRUN: $basefile -> new/$renamed"
+       fi
+    fi
+done
+	
